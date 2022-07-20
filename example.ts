@@ -6,7 +6,8 @@ import { concatUint8Array } from "./buffer";
 
 const { d: privateKey, point: publicKey } = generateKeys(
 	secp256r1.curve,
-	secp256r1.generator
+	secp256r1.generator,
+	secp256r1.n
 );
 
 console.log("a");
@@ -52,7 +53,8 @@ const signature = sign(
 	bigintconversion.bufToBigint(vHash),
 	privateKey,
 	secp256r1.curve,
-	secp256r1.generator
+	secp256r1.generator,
+	secp256r1.n
 );
 
 console.log(
@@ -66,7 +68,8 @@ console.log(
 		publicKey,
 		signature,
 		secp256r1.curve,
-		secp256r1.generator
+		secp256r1.generator,
+		secp256r1.n
 	)
 );
 
