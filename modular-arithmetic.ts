@@ -55,35 +55,39 @@ export function modPow(n: bigint, e: bigint, m: bigint): bigint {
 // console.log(modPow(234n, 11n, 29n));
 
 export function legendre(a: bigint, p: bigint): bigint {
-  return modulo(a ** (p - 1n) / 2n, p);
+  return modPow(a, (p - 1n) / 2n, p);
 }
 
 export function tonelli(n: bigint, p: bigint) {
-  if (modPow(n, (p - 1n) / 2n, p) !== 1n) {
+  const modPowP = (n, e) => modPow(n, e, p);
+  const legendreP = (n) => legendre(n, p);
+
+  if (legendreP(n) !== 1n) {
     throw new Error("Not square (mod p)");
   }
 
   let q = p - 1n;
-  let ss = 0n;
-  while ((q & 1n) === 0n) {
-    ss = ss + 1n;
+  let s = 0n;
+
+  while (modulo(q, 2n) === 0n) {
+    s = s + 1n;
     q = q >> 1n;
   }
 
-  if (ss === 1n) {
-    let r1 = modPow(n, (p + 1n) / 4n, p);
+  if (s === 1n) {
+    let r1 = modPowP(n, (p + 1n) / 4n);
     return r1;
   }
 
   let z = 2n;
-  while (modPow(z, (p - 1n) / 2n, p) !== p - 1n) {
+  while (legendreP(z) !== p - 1n) {
     z = z + 1n;
   }
 
-  let c = modPow(z, q, p);
-  let r = modPow(z, (q + 1n) / 2n, p);
-  let t = modPow(n, q, p);
-  let m = ss;
+  let c = modPowP(z, q);
+  let r = modPowP(z, (q + 1n) / 2n);
+  let t = modPowP(n, q);
+  let m = s;
 
   while (true) {
     if (t === 1n) {
