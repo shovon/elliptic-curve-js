@@ -1,0 +1,126 @@
+function extendedGcd(
+  a: bigint,
+  b: bigint
+): { result: bigint; x: bigint; y: bigint } {
+  if (a === 0n) {
+    return { result: b, x: 0n, y: 1n };
+  }
+
+  const { result, x: x1, y: y1 } = extendedGcd(b % a, a);
+
+  return { result, x: y1 - (b / a) * x1, y: x1 };
+}
+
+export function fastModularInverse(a: bigint, m: bigint): bigint {
+  const { result: g, x } = extendedGcd(a, m);
+  if (g != 1n) {
+    throw new Error("Inverse does not exist!");
+  }
+
+  return ((x % m) + m) % m;
+}
+
+export function modulo(a: bigint, m: bigint) {
+  return a < 0 ? a + (a % m) : a % m;
+}
+
+export function modPow(n: bigint, e: bigint, m: bigint): bigint {
+  if (e === 0n) {
+    return 1n;
+  }
+
+  let result = 1n;
+  let base = modulo(n, m);
+  let exp = e;
+
+  while (true) {
+    if (modulo(exp, 2n) === 1n) {
+      result *= base;
+      result = modulo(result, m);
+    }
+
+    if (exp === 1n) {
+      return result;
+    }
+
+    exp = exp / 2n;
+    base = base * base;
+    base = modulo(base, m);
+  }
+}
+
+// console.log(modPow(1n, 2n, 3n));
+// console.log(modPow(3n, 2n, 1n));
+// console.log(modPow(5n, 2n, 5n));
+// console.log(modPow(234n, 11n, 29n));
+
+export function legendre(a: bigint, p: bigint): bigint {
+  return modulo(a ** (p - 1n) / 2n, p);
+}
+
+export function tonelli(n: bigint, p: bigint) {
+  if (modPow(n, (p - 1n) / 2n, p) !== 1n) {
+    throw new Error("Not square (mod p)");
+  }
+
+  let q = p - 1n;
+  let ss = 0n;
+  while ((q & 1n) === 0n) {
+    ss = ss + 1n;
+    q = q >> 1n;
+  }
+
+  if (ss === 1n) {
+    let r1 = modPow(n, (p + 1n) / 4n, p);
+    return r1;
+  }
+
+  let z = 2n;
+  while (modPow(z, (p - 1n) / 2n, p) !== p - 1n) {
+    z = z + 1n;
+  }
+
+  let c = modPow(z, q, p);
+  let r = modPow(z, (q + 1n) / 2n, p);
+  let t = modPow(n, q, p);
+  let m = ss;
+
+  while (true) {
+    if (t === 1n) {
+      return r;
+    }
+    let i = 0n;
+    let zz = t;
+    while (zz != 1n && i < m - 1n) {
+      zz = modulo(zz * zz, p);
+      i = i + 1n;
+    }
+    let b = c;
+    let e = m - i - 1n;
+    while (e > 0n) {
+      b = modulo(b * b, p);
+      e = e - 1n;
+    }
+    r = modulo(r * b, p);
+    c = modulo(b * b, p);
+    t = modulo(t * c, p);
+    m = i;
+  }
+}
+
+{
+  const ttest: [bigint, bigint][] = [
+    [10n, 13n],
+    [56n, 101n],
+    [1030n, 10009n],
+    [44402n, 100049n],
+    [665820697n, 1000000009n],
+    [881398088036n, 1000000000039n],
+    [41660815127637347468140745042827704103445750172002n, 10n ** 50n + 577n],
+  ];
+
+  for (const [n, p] of ttest) {
+    const r = tonelli(n, p);
+    console.log(`n = ${n} p = ${p} \n\t r1 = ${r} r2 = ${modulo(p - r, p)}`);
+  }
+}
