@@ -48,7 +48,8 @@ export default class EllipticCurve {
 
 		if (!EllipticCurve.pointEquals(a, b)) {
 			delta = modulo(
-				(b.y - a.y) * fastModularInverse(b.x - a.x, this._p),
+				modulo(b.y - a.y, this._p) *
+					fastModularInverse(modulo(b.x - a.x, this._p), this._p),
 				this._p
 			);
 		} else {
