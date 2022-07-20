@@ -45,25 +45,25 @@ export default class EllipticCurve {
 			return a;
 		}
 
-		if (!EllipticCurve.pointEquals(a, b)) {
-			const delta = (b.y - a.y) * fastModularInverse(b.x - a.x, this._p);
-			const x = modulo(delta * delta - a.x - b.x, this._p);
-			const y = modulo(delta * (a.x - x) - a.y, this._p);
-			return {
-				x,
-				y,
-			};
+		let delta: bigint;
+
+		if (!EllipticCurve.pointEquals) {
+			delta = modulo(
+				(b.y - a.y) * fastModularInverse(b.x - a.x, this._p),
+				this._p
+			);
+		} else {
+			delta = modulo(
+				(3n * a.x * a.x + this._a) * fastModularInverse(2n * a.y, this._p),
+				this._p
+			);
 		}
 
-		const factor =
-			(3n * a.x * a.x + this._a) * fastModularInverse(2n * a.y, this._p);
-
-		const x = factor * factor - 2n * a.x;
-		const y = factor * (a.x - x) - a.y;
-
+		const x = modulo(delta * delta - a.x - b.x, this._p);
+		const y = modulo(delta * (a.x - x) - a.y, this._p);
 		return {
-			x: modulo(x, this._p),
-			y: modulo(y, this._p),
+			x,
+			y,
 		};
 	}
 
@@ -80,7 +80,7 @@ export default class EllipticCurve {
 		let r1: Point = point;
 
 		const binary = count.toString(2);
-		let index = binary.length;
+		let index = binary.length - 1;
 		while (index >= 0) {
 			if (binary[index] === "1") {
 				r0 = this.addPoint(r0, r1);

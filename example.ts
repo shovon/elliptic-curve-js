@@ -9,18 +9,35 @@ const { d: privateKey, point: publicKey } = generateKeys(
 	secp256r1.generator
 );
 
-console.log(publicKey);
+console.log(bigintconversion.bigintToHex(privateKey));
+console.log(
+	"04" +
+		bigintconversion.bigintToHex(publicKey.x) +
+		bigintconversion.bigintToHex(publicKey.y)
+);
 
-let v = new Uint8Array(256 / 8);
-v = crypto.getRandomValues(v);
+function str2ab(str: string) {
+	var array = new Uint8Array(str.length);
+	for (var i = 0; i < str.length; i++) {
+		array[i] = str.charCodeAt(i);
+	}
+	return array.buffer;
+}
 
-const vHash = createHash("sha256").update(v).digest().buffer;
+let v = str2ab("Hello, World!");
+
+const vHash = createHash("sha256").update(Buffer.from(v)).digest().buffer;
 
 const signature = sign(
 	bigintconversion.bufToBigint(vHash),
 	privateKey,
 	secp256r1.curve,
 	secp256r1.generator
+);
+
+console.log(
+	bigintconversion.bigintToHex(signature.r) +
+		bigintconversion.bigintToHex(signature.s)
 );
 
 console.log(
@@ -55,7 +72,33 @@ const jwkPrivateKey = {
 };
 
 async function start() {
-	const webCryptoPrivateKey = await crypto.subtle.importKey(
+	console.log(jwkPublicKey);
+	console.log(jwkPrivateKey);
+
+	const webCryptoKeyPair = await crypto.subtle.generateKey(
+		{
+			name: "ECDSA",
+			namedCurve: "P-256",
+		},
+		true,
+		["sign", "verify"]
+	);
+
+	const generatedJwkPublicKey = await crypto.subtle.exportKey(
+		"jwk",
+		webCryptoKeyPair.publicKey
+	);
+	const generatedJwkPrivateKey = await crypto.subtle.exportKey(
+		"jwk",
+		webCryptoKeyPair.privateKey
+	);
+
+	console.log(generatedJwkPublicKey);
+	console.log(generatedJwkPrivateKey);
+
+	// console.log(Buffer.from(generatedJwkPublicKey.x, "base64").byteLength);
+
+	const webCryptoImportedPrivateKey = await crypto.subtle.importKey(
 		"jwk",
 		jwkPrivateKey,
 		{
@@ -66,7 +109,7 @@ async function start() {
 		["sign"]
 	);
 
-	const webCryptoPublicKey = await crypto.subtle.importKey(
+	const webCryptoImportedPublicKey = await crypto.subtle.importKey(
 		"jwk",
 		jwkPublicKey,
 		{
@@ -77,12 +120,21 @@ async function start() {
 		["verify"]
 	);
 
+	const webCryptoSignatureCustom = await crypto.subtle.sign(
+		{
+			name: "ECDSA",
+			hash: { name: "SHA-256" },
+		},
+		webCryptoImportedPrivateKey,
+		v
+	);
+
 	const webCryptoSignature = await crypto.subtle.sign(
 		{
 			name: "ECDSA",
 			hash: { name: "SHA-256" },
 		},
-		webCryptoPrivateKey,
+		webCryptoKeyPair.privateKey,
 		v
 	);
 
@@ -102,7 +154,7 @@ async function start() {
 				name: "ECDSA",
 				hash: { name: "SHA-256" },
 			},
-			webCryptoPublicKey,
+			webCryptoImportedPublicKey,
 			signatureBuf,
 			v
 		)
@@ -111,7 +163,16 @@ async function start() {
 	console.log(
 		await crypto.subtle.verify(
 			{ name: "ECDSA", hash: { name: "SHA-256" } },
-			webCryptoPublicKey,
+			webCryptoImportedPublicKey,
+			webCryptoSignatureCustom,
+			v
+		)
+	);
+
+	console.log(
+		await crypto.subtle.verify(
+			{ name: "ECDSA", hash: { name: "SHA-256" } },
+			webCryptoKeyPair.publicKey,
 			webCryptoSignature,
 			v
 		)
