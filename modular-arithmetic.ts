@@ -54,8 +54,8 @@ export function legendre(a: bigint, p: bigint): bigint {
 }
 
 export function tonelli(n: bigint, p: bigint): [bigint, bigint] | null {
-	const modPowP = (n, e) => modPow(n, e, p);
-	const legendreP = (n) => legendre(n, p);
+	const modPowP = (n: bigint, e: bigint) => modPow(n, e, p);
+	const legendreP = (n: bigint) => legendre(n, p);
 
 	if (legendreP(n) !== 1n) {
 		return null;
