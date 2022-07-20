@@ -1,4 +1,9 @@
-import { fastModularInverse, modulo, tonelli } from "./modular-arithmetic";
+import {
+	fastModularInverse,
+	modPow,
+	modulo,
+	// tonelli,
+} from "./modular-arithmetic";
 
 export type Point = {
 	x: bigint;
@@ -24,16 +29,10 @@ export default class EllipticCurve {
 	}
 
 	isInCurve(point: Point): boolean {
-		const result = tonelli(
-			point.x ** 3n + this._a * point.x + this._b,
-			this._p
-		);
-		if (!result) {
-			return false;
-		}
+		const lhs = modPow(point.y, 2n, this._p);
+		const rhs = modPow(point.x, 3n, this._p) + this._a * point.x + this._b;
 
-		const [r1, r2] = result;
-		return r1 === point.y || r2 === point.y;
+		return modulo(lhs, this._p) === modulo(rhs, this._p);
 	}
 
 	addPoint(a: Point, b: Point): Point {
@@ -47,7 +46,7 @@ export default class EllipticCurve {
 
 		let delta: bigint;
 
-		if (!EllipticCurve.pointEquals) {
+		if (!EllipticCurve.pointEquals(a, b)) {
 			delta = modulo(
 				(b.y - a.y) * fastModularInverse(b.x - a.x, this._p),
 				this._p
@@ -61,6 +60,7 @@ export default class EllipticCurve {
 
 		const x = modulo(delta * delta - a.x - b.x, this._p);
 		const y = modulo(delta * (a.x - x) - a.y, this._p);
+
 		return {
 			x,
 			y,
@@ -76,23 +76,23 @@ export default class EllipticCurve {
 	}
 
 	scalarMultiplyPoint(count: bigint, point: Point): Point {
-		let r0: Point = { x: 0n, y: 1n };
-		let r1: Point = point;
+		const bits = count.toString(2).split("").reverse();
 
-		const binary = count.toString(2);
-		let index = binary.length - 1;
-		while (index >= 0) {
-			if (binary[index] === "1") {
-				r0 = this.addPoint(r0, r1);
-				r1 = this.addPoint(r1, r1);
-			} else {
-				r1 = this.addPoint(r0, r1);
-				r0 = this.addPoint(r0, r0);
-			}
-			index--;
+		let result = { x: 0n, y: 1n };
+		let temp = point;
+
+		if (!this.isInCurve(temp)) {
+			throw new Error("Should be in curve!");
 		}
 
-		return r0;
+		for (const bit of bits) {
+			if (bit === "1") {
+				result = this.addPoint(result, temp);
+			}
+			temp = this.addPoint(temp, temp);
+		}
+
+		return result;
 	}
 
 	get a(): bigint {

@@ -21,32 +21,22 @@ export function fastModularInverse(a: bigint, m: bigint): bigint {
 }
 
 export function modulo(a: bigint, m: bigint) {
-	return a < 0 ? a + (a % m) : a % m;
+	return ((a % m) + m) % m;
 }
 
-export function modPow(n: bigint, e: bigint, m: bigint): bigint {
-	if (e === 0n) {
-		return 1n;
+export function modPow(a: bigint, e: bigint, n: bigint): bigint {
+	let accum = 1n;
+	let apow2 = a;
+
+	while (e > 0n) {
+		if (e & 1n) {
+			accum = modulo(accum * apow2, n);
+		}
+		apow2 = modulo(apow2 * apow2, n);
+		e = e >> 1n;
 	}
 
-	let result = 1n;
-	let base = modulo(n, m);
-	let exp = e;
-
-	while (true) {
-		if (modulo(exp, 2n) === 1n) {
-			result *= base;
-			result = modulo(result, m);
-		}
-
-		if (exp === 1n) {
-			return result;
-		}
-
-		exp = exp / 2n;
-		base = base * base;
-		base = modulo(base, m);
-	}
+	return accum;
 }
 
 export function legendre(a: bigint, p: bigint): bigint {
