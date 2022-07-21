@@ -1,9 +1,4 @@
-import {
-	fastModularInverse,
-	modPow,
-	modulo,
-	// tonelli,
-} from "./modular-arithmetic";
+import { fastModularInverse, modPow, modulo } from "./modular-arithmetic";
 
 export type Point = {
 	x: bigint;
@@ -77,23 +72,20 @@ export default class EllipticCurve {
 	}
 
 	scalarMultiplyPoint(count: bigint, point: Point): Point {
+		let r0 = { x: 0n, y: 1n };
+		let r1 = point;
 		const bits = count.toString(2).split("").reverse();
-
-		let result = { x: 0n, y: 1n };
-		let temp = point;
-
-		if (!this.isInCurve(temp)) {
-			throw new Error("Should be in curve!");
-		}
-
-		for (const bit of bits) {
-			if (bit === "1") {
-				result = this.addPoint(result, temp);
+		for (let i = bits.length - 1; i >= 0; i--) {
+			if (bits[i] === "1") {
+				r0 = this.addPoint(r0, r1);
+				r1 = this.addPoint(r1, r1);
+			} else {
+				r1 = this.addPoint(r0, r1);
+				r0 = this.addPoint(r0, r0);
 			}
-			temp = this.addPoint(temp, temp);
 		}
 
-		return result;
+		return r0;
 	}
 
 	get a(): bigint {
