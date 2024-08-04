@@ -27,12 +27,12 @@ console.log("");
 console.log(privateKey.toString(10));
 console.log(
 	"04" +
-		bigintconversion.bigintToHex(publicKey.x) +
-		bigintconversion.bigintToHex(publicKey.y)
+		bigintconversion.bigintToHex(publicKey!.x) +
+		bigintconversion.bigintToHex(publicKey!.y)
 );
 
-console.log(publicKey.x.toString(10));
-console.log(publicKey.y.toString(10));
+console.log(publicKey!.x.toString(10));
+console.log(publicKey!.y.toString(10));
 
 console.log(secp256r1.generator.x.toString(10));
 console.log(secp256r1.generator.y.toString(10));
@@ -62,6 +62,10 @@ console.log(
 		bigintconversion.bigintToHex(signature.s)
 );
 
+if (!publicKey) {
+	throw new Error("The private key is a point at infinity!");
+}
+
 console.log(
 	verify(
 		bigintconversion.bufToBigint(vHash),
@@ -73,14 +77,14 @@ console.log(
 	)
 );
 
-console.log(bigintconversion.bigintToBuf(publicKey.x).byteLength);
-console.log(bigintconversion.bigintToBuf(publicKey.y).byteLength);
+console.log(bigintconversion.bigintToBuf(publicKey!.x).byteLength);
+console.log(bigintconversion.bigintToBuf(publicKey!.y).byteLength);
 
 const jwkPublicKey = {
 	crv: "P-256",
 	kty: "EC",
-	x: Buffer.from(bigintconversion.bigintToBuf(publicKey.x)).toString("base64"),
-	y: Buffer.from(bigintconversion.bigintToBuf(publicKey.y)).toString("base64"),
+	x: Buffer.from(bigintconversion.bigintToBuf(publicKey!.x)).toString("base64"),
+	y: Buffer.from(bigintconversion.bigintToBuf(publicKey!.y)).toString("base64"),
 };
 
 console.log(jwkPublicKey.x.length);

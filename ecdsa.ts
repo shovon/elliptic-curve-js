@@ -48,5 +48,5 @@ export function verify(
 		curve.scalarMultiplyPoint(signature.r * s1, publicKey)
 	);
 
-	return point.x === signature.r;
+	return point!.x === signature.r;
 }
