@@ -8,7 +8,7 @@ export function generateKeys(
 	n: bigint
 ): {
 	d: bigint;
-	point: Point;
+	point: Point | null;
 } {
 	const d = randIntInRange(n);
 	return {
@@ -25,7 +25,7 @@ export function sign(
 	n: bigint
 ): { r: bigint; s: bigint } {
 	const k = randIntInRange(n);
-	const r = curve.scalarMultiplyPoint(k, generator).x;
+	const r = curve.scalarMultiplyPoint(k, generator)!.x;
 	const s = modulo(fastModularInverse(k, n) * (hash + r * privateKey), n);
 
 	return { r, s };

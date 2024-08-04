@@ -1,4 +1,9 @@
-import { fastModularInverse, modPow, modulo } from "./modular-arithmetic";
+import {
+	fastModularInverse,
+	modPow,
+	modulo,
+	tonelli,
+} from "./modular-arithmetic";
 
 export type Point = {
 	x: bigint;
@@ -30,26 +35,36 @@ export default class EllipticCurve {
 		return modulo(lhs, this._p) === modulo(rhs, this._p);
 	}
 
-	addPoint(a: Point, b: Point): Point {
-		if (!this.isInCurve(a)) {
+	addPoint(a: Point | null, b: Point | null): Point | null {
+		// TODO: something not being a curve should yield an error, not return null.
+		//   null is the point at infinity; anything else is a failure.
+
+		if (a === null || !this.isInCurve(a)) {
 			return b;
 		}
 
-		if (!this.isInCurve(b)) {
+		if (b === null || !this.isInCurve(b)) {
 			return a;
 		}
 
 		let delta: bigint;
 
 		if (!EllipticCurve.pointEquals(a, b)) {
+			if (b.x - a.x === 0n) {
+				return null;
+			}
 			delta = modulo(
 				modulo(b.y - a.y, this._p) *
 					fastModularInverse(modulo(b.x - a.x, this._p), this._p),
 				this._p
 			);
 		} else {
+			if (a.y === 0n) {
+				return null;
+			}
 			delta = modulo(
-				(3n * a.x * a.x + this._a) * fastModularInverse(2n * a.y, this._p),
+				(3n * a.x * a.x + this._a) *
+					fastModularInverse(modulo(2n * a.y, this._p), this._p),
 				this._p
 			);
 		}
@@ -63,16 +78,17 @@ export default class EllipticCurve {
 		};
 	}
 
-	negatePoint(a: Point): Point {
+	negatePoint(a: Point | null): Point | null {
+		if (!a) return a;
 		return { x: modulo(a.x, this._p), y: modulo(-a.y, this._p) };
 	}
 
-	subtractPoint(a: Point, b: Point): Point {
+	subtractPoint(a: Point | null, b: Point | null): Point | null {
 		return this.addPoint(a, this.negatePoint(b));
 	}
 
-	scalarMultiplyPoint(count: bigint, point: Point): Point {
-		let r0 = { x: 0n, y: 1n };
+	scalarMultiplyPoint(count: bigint, point: Point | null): Point | null {
+		let r0: typeof point = null;
 		let r1 = point;
 		const bits = count.toString(2).split("").reverse();
 		for (let i = bits.length - 1; i >= 0; i--) {
@@ -86,6 +102,18 @@ export default class EllipticCurve {
 		}
 
 		return r0;
+	}
+
+	findY(x: bigint): [bigint, bigint] | null {
+		const rhsPositive = tonelli(
+			modulo(
+				modPow(x, 3n, this._p) + modulo(this._a * x, this._p) + this._b,
+				this._p
+			),
+			this._p
+		);
+		if (rhsPositive === null) return null;
+		return [rhsPositive, modulo(-rhsPositive, this._p)];
 	}
 
 	get a(): bigint {
